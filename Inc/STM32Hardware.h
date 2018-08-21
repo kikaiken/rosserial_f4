@@ -39,13 +39,21 @@
 #include "stm32f4xx_hal_uart.h"
 #include "stm32f4xx_hal_tim.h"
 
+#define USESYSTICK
+
+#ifndef USESYSTICK
 extern TIM_HandleTypeDef htim2;
+#endif
+
 extern UART_HandleTypeDef huart2;
+
 
 class STM32Hardware {
   protected:
     TIM_HandleTypeDef *htim;
+
     UART_HandleTypeDef *huart;
+
 
     const static uint16_t rbuflen = 128;
     uint8_t rbuf[rbuflen];
@@ -57,6 +65,11 @@ class STM32Hardware {
     uint32_t twind, tfind;
 
   public:
+#ifdef USESYSTICK
+    STM32Hardware():huart(&huart2), rind(0), twind(0), tfind(0){
+
+    }
+#else
     STM32Hardware():
       htim(&htim2), huart(&huart2), rind(0), twind(0), tfind(0){
     }
@@ -64,11 +77,14 @@ class STM32Hardware {
     STM32Hardware(TIM_HandleTypeDef *htim_, UART_HandleTypeDef *huart_):
       htim(htim_), huart(huart_), rind(0), twind(0), tfind(0){
     }
+#endif
   
     void init(){
       reset_rbuf();
-
+#ifdef USESYSTICK
+#else
       HAL_TIM_Base_Start(htim);
+#endif
     }
 
     void reset_rbuf(void){
@@ -113,8 +129,11 @@ class STM32Hardware {
 
       flush();
     }
-
+#ifdef USESYSTICK
+    unsigned long time(){ return HAL_GetTick(); }
+#else
     unsigned long time(){ return __HAL_TIM_GET_COUNTER(htim); }
+#endif
 
   protected:
 };
